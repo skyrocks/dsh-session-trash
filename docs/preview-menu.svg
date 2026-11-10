@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs>
+    <filter id="menuShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.16"/>
+    </filter>
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="760" fill="#f2f3f5"/>
+  <rect x="0" y="0" width="1200" height="56" fill="#ffffff"/>
+  <circle cx="28" cy="28" r="9" fill="#4d6bfe"/>
+  <text x="46" y="33" font-family="PingFang SC, Helvetica, Arial, sans-serif" font-size="15" fill="#1f2329" font-weight="600">DeepSeek Harness</text>
+
+  <!-- sidebar -->
+  <rect x="0" y="56" width="380" height="704" fill="#f7f8fa"/>
+  <text x="24" y="96" font-family="PingFang SC, Helvetica, Arial, sans-serif" font-size="12" fill="#8a8f98" letter-spacing="0.6">工作区</text>
+  <rect x="16" y="110" width="348" height="34" rx="8" fill="#ffffff" stroke="#e3e5e8"/>
+  <text x="32" y="132" font-family="PingFang SC, Helvetica, Arial, sans-serif" font-size="12.5" fill="#1f2329">PrivateCode/dsh</text>
+  <text x="336" y="132" font-family="PingFang SC, Helvetica, Arial, sans-serif" font-size="11" fill="#b0b4bb">6</text>
+
+  <g font-family="PingFang SC, Helvetica, Arial, sans-serif">
+    <rect x="16" y="158" width="348" height="32" rx="8" fill="#eef1fb"/>
+    <text x="32" y="179" font-size="12.5" fill="#1f2329">删除回收站功能：先做插件</text>
+    <text x="332" y="179" font-size="10.5" fill="#4d6bfe">进行中</text>
+
+    <rect x="16" y="194" width="348" height="32" rx="8" fill="none"/>
+    <text x="32" y="215" font-size="12.5" fill="#5c6169">deepseek-cost 余额口径</text>
+
+    <rect x="16" y="230" width="348" height="32" rx="8" fill="none"/>
+    <text x="32" y="251" font-size="12.5" fill="#5c6169">GO 模型额度标签</text>
+
+    <rect x="16" y="266" width="348" height="32" rx="8" fill="none"/>
+    <text x="32" y="287" font-size="12.5" fill="#5c6169">插件市场索引调试</text>
+
+    <text x="24" y="336" font-size="12" fill="#8a8f98" letter-spacing="0.6">归档</text>
+    <rect x="16" y="350" width="348" height="32" rx="8" fill="none"/>
+    <text x="32" y="371" font-size="12.5" fill="#9aa0a8">2026-08 旧会话</text>
+  </g>
+
+  <!-- session row highlight -->
+  <rect x="12" y="152" width="356" height="44" rx="10" fill="none" stroke="#4d6bfe" stroke-opacity="0.35" stroke-dasharray="4 4"/>
+
+  <!-- context menu -->
+  <g filter="url(#menuShadow)">
+    <rect x="300" y="196" width="232" height="292" rx="12" fill="#ffffff" stroke="#e6e8eb"/>
+  </g>
+  <g font-family="PingFang SC, Helvetica, Arial, sans-serif" font-size="12.5">
+    <text x="322" y="226" fill="#1f2329">置顶</text>
+    <text x="322" y="258" fill="#1f2329">重命名</text>
+    <text x="322" y="290" fill="#1f2329">创建分支副本</text>
+    <text x="322" y="322" fill="#1f2329">复制会话 ID</text>
+    <line x1="318" y1="340" x2="514" y2="340" stroke="#eceef1"/>
+    <text x="322" y="366" fill="#1f2329">归档会话</text>
+    <line x1="318" y1="384" x2="514" y2="384" stroke="#eceef1"/>
+    <text x="322" y="412" fill="#e5484d">删除会话…</text>
+    <text x="322" y="436" fill="#b0b4bb" font-size="10.5">移入回收站，可撤销</text>
+  </g>
+
+  <!-- right pane: conversation -->
+  <g opacity="0.55">
+    <rect x="404" y="96" width="720" height="60" rx="12" fill="#ffffff" filter="url(#cardShadow)"/>
+    <rect x="428" y="118" width="360" height="10" rx="5" fill="#e6e8eb"/>
+    <rect x="428" y="136" width="260" height="8" rx="4" fill="#eef0f3"/>
+
+    <rect x="404" y="172" width="720" height="132" rx="12" fill="#ffffff" filter="url(#cardShadow)"/>
+    <rect x="428" y="196" width="300" height="8" rx="4" fill="#eef0f3"/>
+    <rect x="428" y="214" width="540" height="8" rx="4" fill="#eef0f3"/>
+    <rect x="428" y="232" width="480" height="8" rx="4" fill="#eef0f3"/>
+    <rect x="428" y="250" width="360" height="8" rx="4" fill="#eef0f3"/>
+    <rect x="428" y="272" width="180" height="8" rx="4" fill="#e6e8eb"/>
+
+    <rect x="404" y="320" width="720" height="200" rx="12" fill="#ffffff" filter="url(#cardShadow)"/>
+    <rect x="428" y="344" width="260" height="8" rx="4" fill="#eef0f3"/>
+    <rect x="428" y="362" width="600" height="8" rx="4" fill="#eef0f3"/>
+    <rect x="428" y="380" width="520" height="8" rx="4" fill="#eef0f3"/>
+  </g>
+
+  <g font-family="PingFang SC, Helvetica, Arial, sans-serif">
+    <circle cx="56" cy="706" r="14" fill="#ffffff" stroke="#e3e5e8"/>
+    <text x="50" y="711" font-size="12" fill="#8a8f98">+</text>
+    <text x="80" y="711" font-size="12" fill="#b0b4bb">新会话</text>
+  </g>
+
+  <text x="1148" y="736" text-anchor="end" font-family="PingFang SC, Helvetica, Arial, sans-serif" font-size="11" fill="#b0b4bb">界面示意图</text>
+</svg>

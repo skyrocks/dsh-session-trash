@@ -1,0 +1,77 @@
+{
+  "name": "@skyrocks/dsh-session-trash",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness plugin: 右键删除会话，先移入回收站；可即时撤销，也可在「设置 → 回收站」里恢复或彻底删除",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./typert": "./typert.host.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "trash.js",
+    "session-ops.js",
+    "client.js",
+    "typert.host.js",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "docs",
+    "test"
+  ],
+  "engines": {
+    "node": ">=18",
+    "dsh": ">=0.2.1-rc.3 <0.3.0"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-gateway",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-ui-context-menu"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@deepseek-ai/schemastery": "~3.18.5",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.1-rc.2"
+  },
+  "author": "skyrocks (https://github.com/skyrocks)",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "session",
+    "trash",
+    "delete",
+    "client-plugin"
+  ],
+  "scripts": {
+    "test": "node test/smoke.mjs",
+    "check": "node test/manifest.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skyrocks/dsh-session-trash.git"
+  },
+  "homepage": "https://github.com/skyrocks/dsh-session-trash#readme",
+  "bugs": {
+    "url": "https://github.com/skyrocks/dsh-session-trash/issues"
+  }
+}

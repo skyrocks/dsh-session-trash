@@ -1,0 +1,10 @@
+# dsh-session-trash 插件行：作为 bundle patch 自动注入 profile 组合。
+# 安装后由 `dsh plugin add` 的 reconcile 步骤登记为 profile layer，无需手改用户层。
+# 需要调整时，在 profile 的 cordis.patch.yml 里按 id 覆盖 config：
+#   - id: session-trash
+#     config:
+#       retentionDays: 0        # >0 时，启动/列表时清理超过 N 天的回收站条目
+#       trashRoot: ""           # 自定义回收站目录，空 = ~/.dsh/trash/sessions
+- insert:
+    - id: session-trash
+      name: "@skyrocks/dsh-session-trash"
