@@ -394,6 +394,35 @@ await test("restore 搬回目录并按原状态补回归档标记", async () => 
 
 // ---------------------------------------------------------------- client 接线
 
+/** 记录槽注册的假 slots 服务。 */
+function fakeSlots(calls) {
+  return {
+    inject(name, callback) {
+      calls.push(["inject", name]);
+      callback();
+    },
+    register(options) {
+      calls.push(["register", options.name, options.id ?? null, options.order ?? null, options.key ?? null]);
+      return () => {};
+    }
+  };
+}
+
+/** 记录菜单注册与解析结果的假 contextMenus 服务。 */
+function fakeMenus(calls) {
+  return {
+    register(definition) {
+      calls.push(["menu", definition.id, definition.target]);
+      calls.push(["menu-resolve", definition.resolve({ sessionId: "session-x", displayTitle: "标题 X" })]);
+      calls.push(["menu-resolve-empty", definition.resolve({})]);
+      return () => {};
+    },
+    notify() {}
+  };
+}
+
+let clientExports;
+
 await test("client bundle 导出 apply/inject，扩展点挂载正确", async () => {
   let factory;
   globalThis.window = {
@@ -415,7 +444,7 @@ await test("client bundle 导出 apply/inject，扩展点挂载正确", async ()
     useCallback: (fn) => fn,
     useSyncExternalStore: () => null
   };
-  const clientExports = factory((name) => {
+  clientExports = factory((name) => {
     if (name === "react") return React;
     throw new Error(`unexpected require: ${name}`);
   });
@@ -423,27 +452,9 @@ await test("client bundle 导出 apply/inject，扩展点挂载正确", async ()
   assert.deepEqual(clientExports.inject, ["slots", "remote"]);
 
   const calls = [];
-  const slots = {
-    inject(name, callback) {
-      calls.push(["inject", name]);
-      callback();
-    },
-    register(options) {
-      calls.push(["register", options.name, options.id ?? null, options.order ?? null, options.key ?? null]);
-      return () => {};
-    }
-  };
-  const contextMenus = {
-    register(definition) {
-      calls.push(["menu", definition.id, definition.target]);
-      calls.push(["menu-resolve", definition.resolve({ sessionId: "session-x", displayTitle: "标题 X" })]);
-      calls.push(["menu-resolve-empty", definition.resolve({})]);
-      return () => {};
-    },
-    notify() {}
-  };
+  const contextMenus = fakeMenus(calls);
   const ctx = {
-    get: (name) => ({ slots, remote: undefined, contextMenus, sessions: undefined })[name],
+    get: (name) => ({ slots: fakeSlots(calls), remote: undefined, contextMenus, sessions: undefined })[name],
     effect: (fn) => fn(),
     remote: {
       $mount(manifest) {
@@ -473,6 +484,33 @@ await test("client bundle 导出 apply/inject，扩展点挂载正确", async ()
   assert.deepEqual(resolved[0].icon, { key: "session-trash.delete" });
   assert.equal(resolved[0].danger, true);
   assert.deepEqual(calls.find((call) => call[0] === "menu-resolve-empty")[1], []);
+});
+
+await test("冷启动：contextMenus 尚未 provide 时，等它出现再注册右键项", async () => {
+  const calls = [];
+  const listeners = new Map();
+  const ctx = {
+    get: (name) => ({ slots: fakeSlots(calls), remote: undefined, contextMenus: undefined, sessions: undefined })[name],
+    effect: (fn) => fn(),
+    on(name, listener) {
+      listeners.set(name, listener);
+      return () => listeners.delete(name);
+    },
+    remote: { $mount: () => Promise.resolve() }
+  };
+
+  clientExports.apply(ctx);
+  assert.deepEqual(calls.filter((call) => call[0] === "menu"), [], "服务未就绪时不应注册菜单");
+  // 设置页 / 图标仍然在，只有菜单延后。
+  assert.ok(calls.filter((call) => call[0] === "register").length >= 3);
+
+  // 别的服务先到：什么都不该发生。
+  listeners.get("internal/service")("sessions", {});
+  assert.deepEqual(calls.filter((call) => call[0] === "menu"), []);
+
+  listeners.get("internal/service")("contextMenus", fakeMenus(calls));
+  assert.deepEqual(calls.find((call) => call[0] === "menu").slice(1), ["session.delete", "session"]);
+  assert.equal(listeners.size, 0, "注册之后应移除监听");
 });
 
 // ---------------------------------------------------------------- 包名一致性

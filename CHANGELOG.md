@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- 修复冷启动后「删除会话…」消失：`contextMenus` 由另一个 client 插件在它自己的 apply 里 provide，
+  重启后我们的 apply 可能更早执行，早先直接 `return` 会让右键项永久缺失（设置页却还正常）。
+  现在改为「立即尝试 + 监听 `internal/service`，服务出现后再注册」。
+- 新增冷启动回归用例（20 项）。
+
 ## 0.1.1
 
 - 「删除会话…」菜单项前加垃圾桶图标：字形自绘为内联 SVG，注册在 `contextMenu.icon` 槽（key `session-trash.delete`），不引入 primitives 依赖。

@@ -477,33 +477,45 @@ window.__ModuleLoader__.load({
         slots.register({ name: "settings.section", id: "session-trash", order: 40, label: () => "回收站" }, TrashSection)
       );
 
+      // contextMenus 由另一个 client 插件在自己的 apply 里 provide。冷启动时我们的 apply
+      // 可能更早（插件顺序 / 模块惰性 materialize 都会变），此时 ctx.get 拿到 undefined；
+      // 早先直接 return 会让右键项永久消失（设置页却还正常）。所以：
+      // 先立即尝试，拿不到就等 internal/service 把它 provide 出来再注册。
+      const installMenu = (menus) => {
+        ctx.effect(() =>
+          menus.register({
+            id: "session.delete",
+            target: "session",
+            order: 650,
+            resolve: (target) => {
+              const sessionId = typeof target?.sessionId === "string" ? target.sessionId : "";
+              if (sessionId.length === 0) return [];
+              return [
+                {
+                  id: "delete",
+                  label: "删除会话…",
+                  icon: { key: "session-trash.delete" },
+                  danger: true,
+                  separatorBefore: true,
+                  afterContent: true,
+                  run: () => askDelete(sessionId, target?.displayTitle)
+                }
+              ];
+            }
+          })
+        );
+      };
+
       const menus = ctx.get("contextMenus");
-      if (menus === undefined) {
-        console.warn("dsh-session-trash: contextMenus 服务不可用，右键菜单未注册");
-        return;
+      if (menus !== undefined) {
+        installMenu(menus);
+      } else {
+        const off = ctx.on("internal/service", (name, service) => {
+          if (name !== "contextMenus" || service === undefined) return;
+          off();
+          installMenu(service);
+        });
       }
-      ctx.effect(() =>
-        menus.register({
-          id: "session.delete",
-          target: "session",
-          order: 650,
-          resolve: (target) => {
-            const sessionId = typeof target?.sessionId === "string" ? target.sessionId : "";
-            if (sessionId.length === 0) return [];
-            return [
-              {
-                id: "delete",
-                label: "删除会话…",
-                icon: { key: "session-trash.delete" },
-                danger: true,
-                separatorBefore: true,
-                afterContent: true,
-                run: () => askDelete(sessionId, target?.displayTitle)
-              }
-            ];
-          }
-        })
-      );
     }
 
     exports.apply = apply;

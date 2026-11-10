@@ -5,7 +5,7 @@
 ## 1. 检查
 
 ```sh
-node test/smoke.mjs            # 19 项单元/接线测试
+node test/smoke.mjs            # 20 项单元/接线测试
 node test/manifest.mjs         # 入口、files 白名单、插件行名、typert 清单
 node --check client.js         # 客户端 bundle 语法
 grep -n "YOUR_GITHUB_NAME" README.md README.en.md package.json   # 应无输出
@@ -28,22 +28,22 @@ git init -b main
 git add -A
 git commit -m "feat: session trash plugin for DeepSeek Harness"
 gh repo create skyrocks/dsh-session-trash --public --source=. --remote=origin --push
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
 ## 3. Release
 
 ```sh
-pnpm pack                      # 生成 skyrocks-dsh-session-trash-0.1.1.tgz
+pnpm pack                      # 生成 skyrocks-dsh-session-trash-0.1.2.tgz
 npm publish --access public    # 发布到 npm（名字带 scope）
-gh release create v0.1.1 ./skyrocks-dsh-session-trash-0.1.1.tgz \
-  --title "v0.1.1" --generate-notes
+gh release create v0.1.2 ./skyrocks-dsh-session-trash-0.1.2.tgz \
+  --title "v0.1.2" --generate-notes
 ```
 
 ## 4. 发布前检查
 
-- [x] `node test/smoke.mjs` 通过（19 项）
+- [x] `node test/smoke.mjs` 通过（20 项）
 - [x] `node test/manifest.mjs` 通过
 - [x] 所有模块 `node --check` 通过
 - [x] README 预览图为 PNG（`docs/preview-*.png`），源文件为同目录 SVG
