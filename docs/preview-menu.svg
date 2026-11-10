@@ -53,7 +53,14 @@
     <line x1="318" y1="340" x2="514" y2="340" stroke="#eceef1"/>
     <text x="322" y="366" fill="#1f2329">归档会话</text>
     <line x1="318" y1="384" x2="514" y2="384" stroke="#eceef1"/>
-    <text x="322" y="412" fill="#e5484d">删除会话…</text>
+    <g transform="translate(322,400)" fill="none" stroke="#e5484d" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2.8 4.6h10.4"/>
+      <path d="M6.1 4.6V3.4c0-.5.4-.9.9-.9h1.9c.5 0 .9.4.9.9v1.2"/>
+      <path d="M4.4 4.6v8.1c0 .8.6 1.4 1.4 1.4h4.4c.8 0 1.4-.6 1.4-1.4V4.6"/>
+      <path d="M6.7 7.4v3.4"/>
+      <path d="M9.3 7.4v3.4"/>
+    </g>
+    <text x="346" y="412" fill="#e5484d">删除会话…</text>
     <text x="322" y="436" fill="#b0b4bb" font-size="10.5">移入回收站，可撤销</text>
   </g>
 

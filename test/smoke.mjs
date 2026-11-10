@@ -429,7 +429,7 @@ await test("client bundle 导出 apply/inject，扩展点挂载正确", async ()
       callback();
     },
     register(options) {
-      calls.push(["register", options.name, options.id, options.order]);
+      calls.push(["register", options.name, options.id ?? null, options.order ?? null, options.key ?? null]);
       return () => {};
     }
   };
@@ -457,16 +457,21 @@ await test("client bundle 导出 apply/inject，扩展点挂载正确", async ()
   assert.deepEqual(calls[0], ["mount", "@skyrocks/dsh-session-trash", 5]);
   assert.deepEqual(
     calls.filter((call) => call[0] === "inject").map((call) => call[1]),
-    ["shell.overlay", "settings.section"]
+    ["shell.overlay", "contextMenu.icon", "settings.section"]
   );
-  assert.deepEqual(
-    calls.filter((call) => call[0] === "register").map((call) => call[2]),
-    ["session-trash-confirm", "session-trash"]
+  const registrations = calls.filter((call) => call[0] === "register");
+  assert.ok(registrations.some((call) => call[2] === "session-trash-confirm"), "缺少删除确认框");
+  assert.ok(registrations.some((call) => call[2] === "session-trash"), "缺少回收站设置页");
+  assert.ok(
+    registrations.some((call) => call[1] === "contextMenu.icon" && call[4] === "session-trash.delete"),
+    "缺少删除动作的图标字形"
   );
   assert.deepEqual(calls.find((call) => call[0] === "menu").slice(1), ["session.delete", "session"]);
   const resolved = calls.find((call) => call[0] === "menu-resolve")[1];
   assert.equal(resolved.length, 1);
   assert.equal(resolved[0].label, "删除会话…");
+  assert.deepEqual(resolved[0].icon, { key: "session-trash.delete" });
+  assert.equal(resolved[0].danger, true);
   assert.deepEqual(calls.find((call) => call[0] === "menu-resolve-empty")[1], []);
 });
 

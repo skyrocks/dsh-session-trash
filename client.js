@@ -96,6 +96,31 @@ window.__ModuleLoader__.load({
       ".dsh-st-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:11px;color:var(--dsw-alias-label-tertiary,#8a8f98);}"
     ].join("");
 
+    /** 右键菜单里的垃圾桶字形：16px、跟随 currentColor，不引入 primitives 依赖。 */
+    function TrashGlyph() {
+      return React.createElement(
+        "svg",
+        {
+          width: 16,
+          height: 16,
+          viewBox: "0 0 16 16",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: 1.3,
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+          "aria-hidden": "true",
+          focusable: "false",
+          style: { display: "block" }
+        },
+        React.createElement("path", { d: "M2.8 4.6h10.4" }),
+        React.createElement("path", { d: "M6.1 4.6V3.4c0-.5.4-.9.9-.9h1.9c.5 0 .9.4.9.9v1.2" }),
+        React.createElement("path", { d: "M4.4 4.6v8.1c0 .8.6 1.4 1.4 1.4h4.4c.8 0 1.4-.6 1.4-1.4V4.6" }),
+        React.createElement("path", { d: "M6.7 7.4v3.4" }),
+        React.createElement("path", { d: "M9.3 7.4v3.4" })
+      );
+    }
+
     function ensureStyle() {
       if (typeof document === "undefined") return () => {};
       const id = "dsh-session-trash-style";
@@ -445,6 +470,9 @@ window.__ModuleLoader__.load({
       slots.inject("shell.overlay", () =>
         slots.register({ name: "shell.overlay", id: "session-trash-confirm", order: 60 }, DeleteConfirmDialog)
       );
+      slots.inject("contextMenu.icon", () =>
+        slots.register({ name: "contextMenu.icon", key: "session-trash.delete" }, TrashGlyph)
+      );
       slots.inject("settings.section", () =>
         slots.register({ name: "settings.section", id: "session-trash", order: 40, label: () => "回收站" }, TrashSection)
       );
@@ -466,6 +494,8 @@ window.__ModuleLoader__.load({
               {
                 id: "delete",
                 label: "删除会话…",
+                icon: { key: "session-trash.delete" },
+                danger: true,
                 separatorBefore: true,
                 afterContent: true,
                 run: () => askDelete(sessionId, target?.displayTitle)

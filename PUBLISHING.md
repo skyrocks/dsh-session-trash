@@ -28,17 +28,17 @@ git init -b main
 git add -A
 git commit -m "feat: session trash plugin for DeepSeek Harness"
 gh repo create skyrocks/dsh-session-trash --public --source=. --remote=origin --push
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 ## 3. Release
 
 ```sh
-pnpm pack                      # 生成 skyrocks-dsh-session-trash-0.1.0.tgz
+pnpm pack                      # 生成 skyrocks-dsh-session-trash-0.1.1.tgz
 npm publish --access public    # 发布到 npm（名字带 scope）
-gh release create v0.1.0 ./skyrocks-dsh-session-trash-0.1.0.tgz \
-  --title "v0.1.0" --generate-notes
+gh release create v0.1.1 ./skyrocks-dsh-session-trash-0.1.1.tgz \
+  --title "v0.1.1" --generate-notes
 ```
 
 ## 4. 发布前检查

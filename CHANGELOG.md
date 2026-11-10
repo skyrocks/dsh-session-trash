@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+- 「删除会话…」菜单项前加垃圾桶图标：字形自绘为内联 SVG，注册在 `contextMenu.icon` 槽（key `session-trash.delete`），不引入 primitives 依赖。
+- 该项标记为 `danger`，与动作的破坏性一致（红色；不想要就去掉 `danger: true` 这一行）。
+- 预览图同步更新，README 说明保持不变。
+
 ## 0.1.0
 
 首个版本。
