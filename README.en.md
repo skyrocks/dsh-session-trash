@@ -101,6 +101,10 @@ Override by id in the profile's `cordis.patch.yml`:
   moved from under its writer.
 - **The list refreshes actively**: persistence emits no removal event, so the plugin calls
   `sessions.refresh()` once. In rare cases a page refresh may be needed.
+- **A failed move keeps its evidence**: if a move fails half-way *and* the rollback fails
+  (permissions / I/O), the plugin never cleans the trash entry. It keeps the data with a
+  `meta.json` (`incomplete` plus each session's original path and failure), marks the row in
+  Settings, requires a second click to delete it forever, and skips it during retention cleanup.
 
 ## Compatibility
 

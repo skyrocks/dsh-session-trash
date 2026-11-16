@@ -91,6 +91,7 @@ window.__ModuleLoader__.load({
       ".dsh-st-row-main{flex:1;min-width:0;}",
       ".dsh-st-row-title{font-size:12.5px;color:var(--dsw-alias-label-primary,#1f2329);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
       ".dsh-st-row-sub{margin-top:2px;font-size:11px;color:var(--dsw-alias-label-tertiary,#8a8f98);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+      ".dsh-st-row-sub.is-warning{color:var(--dsw-alias-state-warning-primary,#e6a23c);}",
       ".dsh-st-row-actions{display:flex;gap:2px;flex:none;}",
       ".dsh-st-empty{padding:28px 12px;text-align:center;font-size:12px;color:var(--dsw-alias-label-tertiary,#8a8f98);}",
       ".dsh-st-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:11px;color:var(--dsw-alias-label-tertiary,#8a8f98);}"
@@ -309,6 +310,7 @@ window.__ModuleLoader__.load({
       const [state, setState] = React.useState({ status: "loading", root: "", entries: [], error: null, removed: 0 });
       const [busyId, setBusyId] = React.useState(null);
       const [confirmClear, setConfirmClear] = React.useState(false);
+      const [confirmPurge, setConfirmPurge] = React.useState(null);
 
       const load = React.useCallback(async () => {
         setState((current) => ({ ...current, status: "loading", error: null }));
@@ -337,6 +339,12 @@ window.__ModuleLoader__.load({
       };
 
       const purge = async (entry) => {
+        // 搬运未完成的条目是唯一的数据副本，第一次点击只要求确认。
+        if (entry.incomplete === true && confirmPurge !== entry.trashId) {
+          setConfirmPurge(entry.trashId);
+          return;
+        }
+        setConfirmPurge(null);
         setBusyId(entry.trashId);
         try {
           await call("purge", { trashId: entry.trashId });
@@ -410,7 +418,14 @@ window.__ModuleLoader__.load({
                           ]
                             .filter((part) => part !== null)
                             .join(" · ")
-                        )
+                        ),
+                        entry.incomplete === true
+                          ? React.createElement(
+                              "div",
+                              { className: "dsh-st-row-sub is-warning" },
+                              "⚠ 搬运未完成，数据已保留在这里，确认可恢复后再彻底删除"
+                            )
+                          : null
                       ),
                       React.createElement(
                         "div",
@@ -429,11 +444,12 @@ window.__ModuleLoader__.load({
                           "button",
                           {
                             type: "button",
-                            className: "dsh-st-btn is-link",
+                            className: confirmPurge === entry.trashId ? "dsh-st-btn is-link is-danger" : "dsh-st-btn is-link",
                             disabled: busyId !== null,
-                            onClick: () => purge(entry)
+                            onClick: () => purge(entry),
+                            onBlur: () => setConfirmPurge(null)
                           },
-                          "彻底删除"
+                          confirmPurge === entry.trashId ? "确认彻底删除？" : "彻底删除"
                         )
                       )
                     )

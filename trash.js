@@ -139,6 +139,8 @@ function normalizeSession(input) {
  */
 export function createTrashStore(options = {}) {
   const root = resolve(options.root && String(options.root).trim().length > 0 ? options.root : defaultTrashRoot());
+  /** 搬运实现；测试可以注入一个在回滚时失败、在搬入时成功的版本。 */
+  const move = typeof options.move === "function" ? options.move : movePath;
 
   /** 条目路径，并保证它确实是 root 的直接子目录。 */
   function entryPath(trashId) {
@@ -224,6 +226,8 @@ export function createTrashStore(options = {}) {
       const trashId = `${deletedAt}-${escapeSessionId(rootSessionId)}`;
       const directory = entryPath(trashId);
       const sessions = input.sessions.map(normalizeSession);
+      const title = typeof input.title === "string" && input.title.trim().length > 0 ? input.title.trim() : null;
+      const cwd = typeof input.cwd === "string" ? input.cwd : null;
 
       await mkdir(directory, { recursive: true, mode: 0o700 });
       try {
@@ -235,29 +239,78 @@ export function createTrashStore(options = {}) {
           const bytes = await directorySize(session.originalPath);
           const target = join(directory, "sessions", escapeSessionId(session.sessionId));
           await mkdir(dirname(target), { recursive: true, mode: 0o700 });
-          await movePath(session.originalPath, target);
+          await move(session.originalPath, target);
           session.bytes = bytes;
           session.hasData = true;
         }
       } catch (error) {
-        // 中途失败：把已经搬进来的搬回去，不在回收站里留半条记录。
-        const moved = sessions.filter((session) => session.hasData);
-        for (const session of moved) {
+        // 中途失败：先尝试把已经搬进来的搬回原位。
+        // 全部搬回 → 回收站里只剩空壳，可以安全清理；
+        // 只要有一个没搬回 → 绝不能再 rm：数据还在回收站里，必须保留现场与恢复信息。
+        const failures = [];
+        for (const session of sessions) {
+          if (session.originalPath === null) continue;
           const target = join(directory, "sessions", escapeSessionId(session.sessionId));
+          // 搬运可能「写了一半才失败」（例如跨盘复制到一半 ENOSPC）：目标已存在就按有数据处理，
+          // 不能因为 hasData 还是 false 就把它当成空壳连带删掉。
+          if (!session.hasData && (await pathExists(target))) {
+            session.hasData = true;
+            session.bytes = await directorySize(target);
+            session.partialMove = true;
+          }
+          if (!session.hasData) continue;
           try {
-            await movePath(target, session.originalPath);
-          } catch {
-            // 回滚失败时保留现场，交给人工处理。
+            await move(target, session.originalPath);
+            session.hasData = false;
+            session.bytes = 0;
+            session.rolledBack = true;
+          } catch (rollbackError) {
+            session.rollbackFailed = true;
+            failures.push({
+              sessionId: session.sessionId,
+              originalPath: session.originalPath,
+              message: rollbackError?.message ? String(rollbackError.message) : String(rollbackError)
+            });
           }
         }
-        await rm(directory, { recursive: true, force: true });
-        throw error;
+
+        if (failures.length === 0) {
+          await rm(directory, { recursive: true, force: true });
+          throw error;
+        }
+
+        const partial = {
+          rootSessionId,
+          title,
+          cwd,
+          deletedAt,
+          bytes: sessions.reduce((total, session) => total + session.bytes, 0),
+          sessions,
+          incomplete: true,
+          failure: error?.message ? String(error.message) : String(error),
+          failedAt: Date.now(),
+          rollbackFailures: failures
+        };
+        const metaPath = join(directory, "meta.json");
+        await writeFile(metaPath, `${JSON.stringify(partial, null, 2)}\n`, { mode: 0o600 });
+
+        const stranded = failures.map((failure) => failure.sessionId).join("、");
+        const wrapped = trashError(
+          "trash/rollback-failed",
+          `搬运失败，且 ${failures.length} 个会话未能搬回原路径（${stranded}）。` +
+            `数据没有删除，仍保留在 ${join(directory, "sessions")}；` +
+            `原路径与失败原因记录在 ${metaPath}，可在「设置 → 回收站」里恢复。`
+        );
+        wrapped.cause = error;
+        wrapped.partial = partial;
+        wrapped.trashId = trashId;
+        throw wrapped;
       }
 
       const meta = {
         rootSessionId,
-        title: typeof input.title === "string" && input.title.trim().length > 0 ? input.title.trim() : null,
-        cwd: typeof input.cwd === "string" ? input.cwd : null,
+        title,
+        cwd,
         deletedAt,
         bytes: sessions.reduce((total, session) => total + session.bytes, 0),
         sessions
@@ -294,7 +347,7 @@ export function createTrashStore(options = {}) {
 
       for (const plan of plans) {
         await mkdir(dirname(plan.target), { recursive: true });
-        await movePath(plan.dataPath, plan.target);
+        await move(plan.dataPath, plan.target);
       }
       await rm(directory, { recursive: true, force: true });
       return meta;
@@ -338,6 +391,8 @@ export function createTrashStore(options = {}) {
       const { entries } = await this.list();
       let removed = 0;
       for (const entry of entries) {
+        // incomplete 条目是「搬运失败但数据还在」的现场，只能由用户手动清空。
+        if (entry.incomplete === true) continue;
         const deletedAt = Number(entry.deletedAt);
         if (!Number.isFinite(deletedAt) || deletedAt > cutoff) continue;
         await rm(entryPath(entry.trashId), { recursive: true, force: true });

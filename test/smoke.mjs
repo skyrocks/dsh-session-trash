@@ -348,6 +348,46 @@ await test("归档被活动检查拒绝时，把工作清单翻译成可读错�
   assert.equal(await readFile(join(parent, "session.v4.jsonl.zstd"), "utf8"), "log");
 });
 
+await test("删除失败（数据未搬动）时，还原为删除而新加的归档标记", async () => {
+  const { sessions } = await sandbox();
+  const path = await makeSession(sessions, "session-fail", "log");
+  const registry = fakeRegistry();
+
+  await assert.rejects(
+    removeSession({
+      sessionId: "session-fail",
+      persistence: { list: async () => [snapshotFor("session-fail", { path: join(path, "session.v4.jsonl.zstd") })] },
+      registry,
+      sessions: fakeSessions(),
+      store: { add: async () => { throw new Error("disk full"); } }
+    }),
+    /disk full/
+  );
+  assert.deepEqual(registry.snapshot(), { archived: [], pinned: [] }, "失败的删除不应留下归档标记");
+});
+
+await test("搬运回滚失败时，已进回收站的会话保持归档（避免露出半截会话）", async () => {
+  const { sessions } = await sandbox();
+  const path = await makeSession(sessions, "session-stuck", "log");
+  const registry = fakeRegistry();
+  const failure = Object.assign(new Error("rollback failed"), {
+    code: "trash/rollback-failed",
+    partial: { sessions: [{ sessionId: "session-stuck", hasData: true }] }
+  });
+
+  await assert.rejects(
+    removeSession({
+      sessionId: "session-stuck",
+      persistence: { list: async () => [snapshotFor("session-stuck", { path: join(path, "session.v4.jsonl.zstd") })] },
+      registry,
+      sessions: fakeSessions(),
+      store: { add: async () => { throw failure; } }
+    }),
+    (error) => error.code === "trash/rollback-failed"
+  );
+  assert.deepEqual(registry.snapshot(), { archived: ["session-stuck"], pinned: [] });
+});
+
 await test("找不到会话日志时报 session/unknown", async () => {
   const { store } = await sandbox();
   await assert.rejects(
@@ -390,6 +430,123 @@ await test("restore 搬回目录并按原状态补回归档标记", async () => 
   assert.deepEqual(restored.sessionIds, ["session-c"]);
   assert.equal(await readFile(join(path, "session.v4.jsonl.zstd"), "utf8"), "log");
   assert.deepEqual(registry.snapshot(), { archived: ["session-c"], pinned: [] });
+});
+
+await test("回滚也失败时：保留回收站里的数据与恢复信息，不清理", async () => {
+  const { store, sessions, root } = await sandbox();
+  const good = await makeSession(sessions, "session-good", "keep-me");
+  // 注入一个「搬入成功、回滚失败」的 mover，模拟回滚阶段的权限/IO 故障。
+  const failing = createTrashStore({
+    root,
+    move: async (from, to) => {
+      if (from.startsWith(root)) throw new Error("EACCES: 回滚被拒绝");
+      return movePath(from, to);
+    }
+  });
+
+  await assert.rejects(
+    failing.add({
+      rootSessionId: "session-good",
+      title: "要保留的会话",
+      sessions: [
+        { sessionId: "session-good", originalPath: good },
+        { sessionId: "session-missing", originalPath: join(sessions, "session-missing") }
+      ]
+    }),
+    (error) => error.code === "trash/rollback-failed" && error.message.includes("数据没有删除")
+  );
+
+  // 条目还在，meta 标记 incomplete，并记录失败原因与原路径。
+  const ids = await readdir(root);
+  assert.equal(ids.length, 1, "回滚失败时不能删除回收站条目");
+  const metaPath = join(root, ids[0], "meta.json");
+  const meta = JSON.parse(await readFile(metaPath, "utf8"));
+  assert.equal(meta.incomplete, true);
+  assert.equal(meta.rollbackFailures.length, 1);
+  assert.equal(meta.rollbackFailures[0].sessionId, "session-good");
+  assert.equal(meta.sessions.find((session) => session.sessionId === "session-good").hasData, true);
+  assert.equal(
+    await readFile(join(root, ids[0], "sessions", "session-good", "session.v4.jsonl.zstd"), "utf8"),
+    "keep-me"
+  );
+
+  // 数据确实可恢复：用真实 store 从回收站搬回原位。
+  await store.restore(ids[0]);
+  assert.equal(await readFile(join(good, "session.v4.jsonl.zstd"), "utf8"), "keep-me");
+  assert.deepEqual(await readdir(root), []);
+});
+
+await test("搬运写到一半失败（目标已有数据）时，同样保留现场而不是当空壳删掉", async () => {
+  const { sessions, root } = await sandbox();
+  const good = await makeSession(sessions, "session-a", "aaa");
+  const partialSource = await makeSession(sessions, "session-partial", "bbb");
+
+  const store = createTrashStore({
+    root,
+    move: async (from, to) => {
+      if (from.startsWith(root)) throw new Error("EACCES: 回滚被拒绝");
+      if (from === partialSource) {
+        await mkdir(to, { recursive: true });
+        await writeFile(join(to, "session.v4.jsonl.zstd"), "half");
+        throw new Error("ENOSPC: 复制到一半");
+      }
+      return movePath(from, to);
+    }
+  });
+
+  await assert.rejects(
+    store.add({
+      rootSessionId: "session-a",
+      sessions: [
+        { sessionId: "session-a", originalPath: good },
+        { sessionId: "session-partial", originalPath: partialSource }
+      ]
+    }),
+    (error) => error.code === "trash/rollback-failed"
+  );
+
+  const [trashId] = await readdir(root);
+  const meta = JSON.parse(await readFile(join(root, trashId, "meta.json"), "utf8"));
+  const partial = meta.sessions.find((session) => session.sessionId === "session-partial");
+  assert.equal(partial.hasData, true, "写到一半的目标也要算作现场数据");
+  assert.equal(partial.partialMove, true);
+  // 源目录没被删，回收站里的半份也没被清理。
+  assert.equal(await readFile(join(partialSource, "session.v4.jsonl.zstd"), "utf8"), "bbb");
+  assert.equal(await readFile(join(root, trashId, "sessions", "session-partial", "session.v4.jsonl.zstd"), "utf8"), "half");
+});
+
+await test("过期清理跳过「搬运未完成」的现场，只由用户清空", async () => {
+  const { store, sessions, root } = await sandbox();
+  const good = await makeSession(sessions, "session-stuck", "stuck-data");
+  const failing = createTrashStore({
+    root,
+    move: async (from, to) => {
+      if (from.startsWith(root)) throw new Error("EACCES: 回滚被拒绝");
+      return movePath(from, to);
+    }
+  });
+  await assert.rejects(
+    failing.add({
+      rootSessionId: "session-stuck",
+      sessions: [
+        { sessionId: "session-stuck", originalPath: good },
+        { sessionId: "session-missing", originalPath: join(sessions, "session-missing") }
+      ]
+    }),
+    (error) => error.code === "trash/rollback-failed"
+  );
+
+  const [trashId] = await readdir(root);
+  const metaPath = join(root, trashId, "meta.json");
+  const meta = JSON.parse(await readFile(metaPath, "utf8"));
+  meta.deletedAt = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  await writeFile(metaPath, JSON.stringify(meta));
+
+  assert.equal(await store.purgeExpired(7), 0, "incomplete 条目不能被过期清理删掉");
+  assert.equal(await readFile(join(root, trashId, "sessions", "session-stuck", "session.v4.jsonl.zstd"), "utf8"), "stuck-data");
+  // 用户主动清空时才真的删除。
+  assert.equal(await store.purgeAll(), 1);
+  assert.deepEqual(await readdir(root), []);
 });
 
 // ---------------------------------------------------------------- client 接线

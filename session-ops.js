@@ -135,12 +135,33 @@ export async function removeSession({ sessionId, title, persistence, registry, s
     };
   });
 
-  const meta = await store.add({
-    rootSessionId: rootId,
-    title: displayTitle,
-    cwd: typeof rootSnapshot.header?.cwd === "string" ? rootSnapshot.header.cwd : null,
-    sessions: specs
-  });
+  let meta;
+  try {
+    meta = await store.add({
+      rootSessionId: rootId,
+      title: displayTitle,
+      cwd: typeof rootSnapshot.header?.cwd === "string" ? rootSnapshot.header.cwd : null,
+      sessions: specs
+    });
+  } catch (error) {
+    // 搬运没成功：把我们为了删除而新加的归档标记还原。
+    // 例外是「已经搬进回收站、又没能搬回」的会话——它的日志不在原位了，
+    // 保持归档（并在回收站里保留现场）比在侧栏里露出半截会话更安全。
+    const stranded = new Set(
+      (Array.isArray(error?.partial?.sessions) ? error.partial.sessions : [])
+        .filter((session) => session.hasData === true)
+        .map((session) => session.sessionId)
+    );
+    for (const id of newlyArchived) {
+      if (stranded.has(id)) continue;
+      try {
+        await registry.unarchiveSession(id);
+      } catch {
+        // 回滚尽力而为；标记残留不影响数据安全。
+      }
+    }
+    throw error;
+  }
 
   // 文件已经安全进回收站，再清标记；任何一步失败都不该让删除整体失败。
   // 归档标记一律清掉（未归档的会话上面刚被归档，也要还原回去）；
