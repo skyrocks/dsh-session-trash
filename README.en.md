@@ -1,5 +1,8 @@
 # @skyrocks/dsh-session-trash
 
+[![CI](https://github.com/skyrocks/dsh-session-trash/actions/workflows/ci.yml/badge.svg)](https://github.com/skyrocks/dsh-session-trash/actions/workflows/ci.yml)
+![license](https://img.shields.io/badge/license-MIT-blue.svg)
+
 Real session deletion for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`):
 right-click a session → **Delete session…** moves it to the trash; undo from the toast, or
 restore / purge it later under **Settings → Trash**.

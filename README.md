@@ -1,5 +1,8 @@
 # @skyrocks/dsh-session-trash
 
+[![CI](https://github.com/skyrocks/dsh-session-trash/actions/workflows/ci.yml/badge.svg)](https://github.com/skyrocks/dsh-session-trash/actions/workflows/ci.yml)
+![license](https://img.shields.io/badge/license-MIT-blue.svg)
+
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）补上真正的会话删除：
 右键「删除会话…」先移入回收站，可即时撤销，也能在「设置 → 回收站」里恢复或彻底删除。
 
