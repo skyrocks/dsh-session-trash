@@ -46,12 +46,27 @@ for (const file of [
   "README.md",
   "README.en.md",
   "CHANGELOG.md",
-  "LICENSE",
-  "test"
+  "LICENSE"
 ]) {
   assert.ok(manifest.files.includes(file), `files 缺少 ${file}`);
   assert.ok(existsSync(join(root, file)), `仓库里缺少 ${file}`);
 }
+// 测试留在仓库里，但不随包分发：自动化商店会把包内测试里的 node:fs 当成运行时权限信号。
+for (const file of ["test/smoke.mjs", "test/manifest.mjs"]) {
+  assert.ok(existsSync(join(root, file)), `仓库里缺少 ${file}`);
+}
+assert.ok(!manifest.files.includes("test"), "files 不应包含 test");
+
+// 图标与本地化元数据随包分发；files 用通配符，按条目单独断言。
+for (const file of ["icon.svg", "locale/zh.json", "locale/en.json"]) {
+  assert.ok(existsSync(join(root, file)), `仓库里缺少 ${file}`);
+}
+for (const entry of ["icon.svg", "locale/*.json"]) {
+  assert.ok(manifest.files.includes(entry), `files 缺少 ${entry}`);
+}
+assert.equal(manifest.exports?.["./icon"], "./icon.svg");
+assert.equal(manifest.exports?.["./locale/*.json"], "./locale/*.json");
+
 // PUBLISHING.md 是维护者文档，不该进 tarball。
 assert.ok(!manifest.files.includes("PUBLISHING.md"), "files 不应包含 PUBLISHING.md");
 

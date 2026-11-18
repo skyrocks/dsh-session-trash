@@ -1,6 +1,6 @@
 {
   "name": "@skyrocks/dsh-session-trash",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "DeepSeek Harness plugin: 右键删除会话，先移入回收站；可即时撤销，也可在「设置 → 回收站」里恢复或彻底删除",
   "license": "MIT",
   "type": "module",
