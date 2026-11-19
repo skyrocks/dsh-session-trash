@@ -476,6 +476,22 @@ window.__ModuleLoader__.load({
       );
     }
 
+    /** 设置页左侧导航里的图标（回收站）。 */
+    function TrashGlyph(props) {
+      const size = props !== null && typeof props === "object" && typeof props.size === "number" ? props.size : 16;
+      return React.createElement(
+        "svg",
+        { width: size, height: size, viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", focusable: "false" },
+        React.createElement("path", {
+          d: "M2.8 4.6h10.4M6 4.6V3.2h4v1.4M4.6 4.6l.55 8.1c.04.55.5.9 1.02.9h3.66c.52 0 .98-.35 1.02-.9l.55-8.1M6.7 7.2v4M9.3 7.2v4",
+          stroke: "currentColor",
+          strokeWidth: 1.3,
+          strokeLinecap: "round",
+          strokeLinejoin: "round"
+        })
+      );
+    }
+
     function apply(ctx) {
       ctxRef = ctx;
       mountReady = ctx.remote.$mount(REMOTE);
@@ -491,6 +507,11 @@ window.__ModuleLoader__.load({
       );
       slots.inject("settings.section", () =>
         slots.register({ name: "settings.section", id: "session-trash", order: 40, label: () => "回收站" }, TrashSection)
+      );
+
+      // 设置页左侧导航的图标：不注册就是壳默认的齿轮。
+      slots.inject("settings.section.icon", () =>
+        slots.register({ name: "settings.section.icon", id: "session-trash", order: 40 }, TrashGlyph)
       );
 
       // contextMenus 由另一个 client 插件在自己的 apply 里 provide。冷启动时我们的 apply

@@ -625,7 +625,7 @@ await test("client bundle 导出 apply/inject，扩展点挂载正确", async ()
   assert.deepEqual(calls[0], ["mount", "@skyrocks/dsh-session-trash", 5]);
   assert.deepEqual(
     calls.filter((call) => call[0] === "inject").map((call) => call[1]),
-    ["shell.overlay", "contextMenu.icon", "settings.section"]
+    ["shell.overlay", "contextMenu.icon", "settings.section", "settings.section.icon"]
   );
   const registrations = calls.filter((call) => call[0] === "register");
   assert.ok(registrations.some((call) => call[2] === "session-trash-confirm"), "缺少删除确认框");

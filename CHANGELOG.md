@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6
+
+- 设置页左侧导航补上专属图标：注册 `settings.section.icon`（之前只注册了 `settings.section`，不注册图标就会显示壳默认的齿轮）。
+
 ## 0.1.5
 
 - 修复 `test/manifest.mjs` 里「`files` 必须包含 test」的旧断言：测试仍留在仓库，但不再随包分发；同时补上图标与 `locale/*.json` 的 manifest 断言。
